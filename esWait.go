@@ -22,13 +22,15 @@ func NewWait() *EsWait {
 
 //获取等待管道
 func (w *EsWait) Wait() <-chan struct{} {
-	return *w.ws
+	ws := (*waitSignal)(atomic.LoadPointer(
+		(*unsafe.Pointer)(unsafe.Pointer(&w.ws))))
+	return *ws
 }
 
 //发送信号
 func (w *EsWait) Signal() {
 	var nws waitSignal = make(chan struct{})
-	ws := atomic.SwapPointer(
-		(*unsafe.Pointer)(unsafe.Pointer(&w.ws)), unsafe.Pointer(&nws))
-	close(*((*waitSignal)(ws))) //go15，不关闭,性能更好
+	ws := (*waitSignal)(atomic.SwapPointer(
+		(*unsafe.Pointer)(unsafe.Pointer(&w.ws)), unsafe.Pointer(&nws)))
+	close(*ws) //go15，不关闭,性能更好
 }
