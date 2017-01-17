@@ -1,5 +1,10 @@
-// esWait
+// esWait.go
 package wait
+
+import (
+	"sync/atomic"
+	"unsafe"
+)
 
 type waitSignal chan struct{}
 
@@ -13,4 +18,12 @@ func NewWait() *EsWait {
 	var ws waitSignal = make(chan struct{})
 	w.ws = &ws
 	return w
+}
+
+//发送信号
+func (w *EsWait) Signal() {
+	var nws waitSignal = make(chan struct{})
+	ws := (*waitSignal)(atomic.SwapPointer(
+		(*unsafe.Pointer)(unsafe.Pointer(&w.ws)), unsafe.Pointer(&nws)))
+	close(*ws) //go15，不关闭,性能更好
 }
